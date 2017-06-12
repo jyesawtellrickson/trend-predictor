@@ -13,6 +13,7 @@ import pickle as pkl
 
 # define subreddits to scrape
 subreddits = ['teaching', 'education']
+posts = []
 # process each country seperately
 for subreddit in subreddits:
     # define base website address and search address
@@ -29,16 +30,10 @@ for subreddit in subreddits:
         elems = homeSoup.find_all('div', attrs={"class": 'thing'})
         # iterate through elements
         for elem in enumerate(elems):
-            # get tag as string
-            name = elem.a.getText()
-            tag = str(elem.p)[3:-4]
-            temp = str(elem.a).find(">")
-            link = str(elem.a)[9:temp-1]
-            caterers.loc[start_p+j] = [name, tag, base+link]
+            # get title, date
+            posts += [elem]
     # dump completed output to caterers pickle file
-    pkl.dump(caterers, open("caterers_"+country+".p", "wb"))
-    # also send to csv
-    caterers.to_csv("caterers_"+country+".csv", encoding='utf-8')
-    print(country+" complete.")
+    pkl.dump(posts, open("reddit_posts.pkl", "wb"))
+    print(subreddit+" complete.")
 # send final output to user
-print("All countries completed.")
+print("All subreddits completed.")
