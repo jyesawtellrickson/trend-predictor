@@ -9,11 +9,7 @@ import matplotlib.pyplot as plt
 import json
 import pickle
 
-consumer_key = "aTBKDuDix3ILWXdCSMC2rwoUV"
-consumer_secret = "wBdoCAXY7lkL0QDBy5IsE6zbDk9BowJksMIKwafKn0JvWvkh4B"
-access_token = "899746063-eTIFXfPAhbZiwIzJDDpFVdwP54IE2m2KDPsF2NMf"
-access_secret = "vyp0wZY8H2uccAFE1I8dx6OuFAMAZCPPPuuY4A1mAt1bt"
-
+from credentials import *
 
 auth = OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_secret)
@@ -59,6 +55,7 @@ def tweets_for_user(api, username):
         test_edu += tweet.text.find('educat') >= 0
     test = test / len(tweets)
     # do they talk about education enough?
+    # are they posting too often?
     if test > 0.5 or test_edu < 0.1:
         return
     return tweets
@@ -73,6 +70,19 @@ def tweets_for_search(api, search, number):
     for status in tweepy.Cursor(api.search, q=search).items(number):
         tweets += [status._json]
     return tweets
+
+
+def update_tweeter_scores(tweets, scores):
+    """
+    take tweets and add to the user scores
+    to help identify trend setters
+    """
+    for tweet in tweets:
+        # one score for each tweet
+        scores[tweet['user']['id_str']] += 1
+        # one score for each mention
+    return scores
+
 
 def tweets_to_text_date(tweets):
     return [(t['created_at'], t['text']) for t in tweets]

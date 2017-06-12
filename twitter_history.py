@@ -1,9 +1,5 @@
 from twitter import *
 
-token = "899746063-eTIFXfPAhbZiwIzJDDpFVdwP54IE2m2KDPsF2NMf"
-token_secret = "vyp0wZY8H2uccAFE1I8dx6OuFAMAZCPPPuuY4A1mAt1bt"
-consumer_key = "aTBKDuDix3ILWXdCSMC2rwoUV"
-consumer_secret = "wBdoCAXY7lkL0QDBy5IsE6zbDk9BowJksMIKwafKn0JvWvkh4B"
 
 t = Twitter(
     auth=OAuth(token, token_secret, consumer_key, consumer_secret))
