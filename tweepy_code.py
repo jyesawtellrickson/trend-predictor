@@ -7,6 +7,8 @@ from datetime import datetime
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
+from nltk.stem.porter import *
+
 from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 import operator
@@ -82,6 +84,14 @@ def tweets_for_search(api, search, number):
             print("{0} tweets processed".format(len(tweets)))
             save_file(tweets, "during_processing.pkl")
     return tweets
+
+
+def stem_doc(doc):
+    stemmer = PorterStemmer()
+    # split doc into words
+    words = doc.split(' ')
+    words = [stemmer.stem(word) for word in words]
+    return ' '.join(words)
 
 
 def update_tweeter_scores(tweets, scores):
@@ -196,36 +206,36 @@ def save_file(file, output_name):
     return
 
 
-def get_tweets():
+def load_file(file_name):
+    file = open(file_name, 'rb')
+    data = pickle.load(file)
+    file.close()
+    return data
+
+
+def generate_tweets_file():
     print("getting tweets for search term")
-    HISTORICAL_TWEETS = tweets_for_search(api, "#beauty", None)
-    # print([t.text for t in HISTORICAL_TWEETS])
-
-    output_file = open('historical_tweets_2.pkl', 'wb')
-
-    pickle.dump(HISTORICAL_TWEETS, output_file)
-
-    output_file.close()
+    tweets = tweets_for_search(api, "#education #teaching", None)
+    save_file(tweets, 'historical_tweets_2.pkl')
     return
 
+
 def analyse_tweets():
-    tweets_file = open('historical_tweets.pkl','rb')
-    tweets = pickle.load(tweets_file)
+    tweets = load_file('during_processing.pkl')
     plot_historical(history_generator(tweets))
-    tweets_dt = tweets_to_text_date(tweets)
     # create old and new doc
-    doc = " ".join([str(i[1]) for i in tweets_dt])
+    doc = " ".join([t['text'] for t in tweets])
+    doc = stem_doc(doc)
     # need to filter out bad tweets
     # ones containing careers, jobs, hiring
-    stop_words = ['career', 'job', 'hire', 'hiring','https','t.co',
+    stop_words = ['career', 'job', 'hire', 'hiring','https','t.co', 'teach', 'educ',
                   'Job','Hiring','Career', 'latest opening','recommend anyone','RT']
     for word in stop_words:
         doc = doc.replace(word, "")
-    print(doc)
     generate_wordcloud(doc)
 
 
-get_tweets()
+# generate_tweets_file()
 analyse_tweets()
 # done
 
