@@ -1,3 +1,6 @@
+WIP
+
+
 Analyse data for upcoming trends in a particular industry.
 
 Data comes from:
