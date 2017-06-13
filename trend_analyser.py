@@ -1,49 +1,51 @@
-from datetime import datetime
-
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
+from nltk.corpus import stopwords
+
+import statsmodels.tsa.stattools as ts
+
+import pandas as pd
 
 from nltk.stem.porter import *
 
-from sklearn.feature_extraction.text import CountVectorizer
-import numpy as np
-import operator
+from collections import Counter
+
+from datetime import datetime
+from dateutil.relativedelta import *
 
 from util import *
 
 
-# should preprocess the text lemmatize/stem
-
 def stem_doc(doc):
+    """
+    Takes a doc and applies stemming to words.
+    Args:
+        doc: string
+
+    Returns: stemmed doc string
+
+    """
     stemmer = PorterStemmer()
     # split doc into words
     words = doc.split(' ')
     words = [stemmer.stem(word) for word in words]
-    return ' '.join(words)
-
-
-def update_tweeter_scores(tweets, scores):
-    """
-    take tweets and add to the user scores
-    to help identify trend setters
-    """
-    for tweet in tweets:
-        # one score for each tweet
-        scores[tweet['user']['id_str']] += 1
-        # one score for each mention
-    return scores
+    return doc #' '.join(words)
 
 
 def generate_wordcloud(doc):
+    """
+    Given a doc, generate a wordcloud.
+    Args:
+        doc: string
+
+    Returns:
+
+    """
     wordcloud = WordCloud().generate(doc)
     plt.imshow(wordcloud, interpolation='bilinear')
     plt.axis('off')
     plt.show()
     return
-
-
-def year_from_date(date_string):
-    return datetime.strptime(date_string, '%a %b %d %H:%M:%S %z %Y').year
 
 
 def plot_historical(historical_data):
@@ -63,7 +65,7 @@ def plot_historical(historical_data):
     return
 
 
-def history_generator(tweets):
+def history_generator(doc):
     """
     Create a dict of terms with frequency
     per month/year.
@@ -72,12 +74,11 @@ def history_generator(tweets):
 
     """
     # convert tweets to date and time
-    tweets_td = tweets_to_text_date(tweets)
     start_year = 2010
     end_year = 2017
     counts_all = {}
     for year in range(start_year, end_year+1):
-        process_tweets = [t[1] for t in tweets_td if year_from_date(t[0]) == year]
+        process_tweets = [t[1] for t in doc if t[0] == year]
         if process_tweets != []:
             counts = create_counts(process_tweets)
             for term in counts:
@@ -88,40 +89,92 @@ def history_generator(tweets):
     return counts_all
 
 
+def snippets_to_doc(snippets):
+    """
+    Takes a list of snippets and returns a doc.
+    Args:
+        snippets: list of snippet
+
+    Returns: doc as string
+
+    """
+    # multiply each by the weight
+    return "".join([(s[1]+' ')*int(s[2]) for s in snippets])
+
+
+def divide_monthly(docs):
+    """
+    Take a list of snippets and return dict of snippets
+    divided into monthly bins.
+    Args:
+        docs: list of snippets
+
+    Returns: dict containing snippets
+
+    """
+    # seperate out docs based on month
+    dates = [d[0] for d in docs]
+    min_date = datetime.fromtimestamp(min(dates)).replace(day=1).date()
+    # should be the following month, really
+    max_date = datetime.fromtimestamp(max(dates)).replace(day=1).date() + relativedelta(months=1)
+    monthly_docs = {}
+    while min_date <= max_date:
+        min_date = min_date + relativedelta(months=1)
+        monthly_docs[min_date] = [d for d in docs if datetime.fromtimestamp(d[0]).date() < min_date]
+    return monthly_docs
+
+
+def remove_stop_words(doc):
+    cached_stop_words = set(stopwords.words("english"))
+    cached_stop_words.update(['education','&','-','--','2012','8','america','american'])
+    doc = ' '.join([word for word in doc.split() if word.lower() not in cached_stop_words])
+    return doc
+
+
 def create_counts(doc):
     """
-    Create a frequency distribution from a list of tweets.
+    Create a frequency distribution from a doc.
 
     Args:
-        doc: list of tweets
+        doc: string
 
-    Returns: dict containing counts of top 100 words
+    Returns: dict containing counts of top 100 terms
 
     """
-    cv = CountVectorizer(stop_words='english', max_features=100)
-    X = cv.fit_transform(doc)
-    freq = np.ravel(X.sum(axis=0))
-    vocab = [v[0] for v in sorted(cv.vocabulary_.items(), key=operator.itemgetter(1))]
-    fdist = dict(zip(vocab, freq))
-    return fdist
+    freqs = Counter(doc.lower().split()).most_common(100)
+    # normalise
+    for i in range(0, len(freqs)):
+        freqs[i] = (freqs[i][0], freqs[i][1] / len(doc.split()))
+    return freqs
 
 
 def analyse_tweets():
-    tweets = load_file('during_processing.pkl')
-    plot_historical(history_generator(tweets))
-    # create old and new doc
-    doc = " ".join([t['text'] for t in tweets])
-    doc = stem_doc(doc)
-    # need to filter out bad tweets
-    # ones containing careers, jobs, hiring
-    stop_words = ['career', 'job', 'hire', 'hiring','https','t.co', 'teach', 'educ',
-                  'Job','Hiring','Career', 'latest opening','recommend anyone','RT']
-    for word in stop_words:
-        doc = doc.replace(word, "")
-    generate_wordcloud(doc)
+    snippets = load_file('reddit_for_analysis.pkl')
+    # divide monthly
+    monthly_snippets = divide_monthly(snippets)
+    df = pd.DataFrame()
+    # convert to docs and stem
+    for key in monthly_snippets.keys():
+        monthly_snippets[key] = stem_doc(remove_stop_words(snippets_to_doc(monthly_snippets[key])))
+        counts = create_counts(monthly_snippets[key])
+        df_temp = pd.DataFrame([(key, c[0], c[1]) for c in counts])
+        df_temp = df_temp.pivot(index=1, columns=0, values=2)
+        df = pd.concat([df, df_temp], axis=1)
+        print(key, df)
+        # generate_wordcloud(monthly_snippets[key])
+    df = df.transpose()
+    df.sort_index(inplace=True)
+    print(df)
+    save_file(df, 'dataframe_for_plot.pkl')
+
+
+def stats_tests():
+
 
 
 analyse_tweets()
+
+
 # done
 
 

@@ -35,6 +35,12 @@ for term in flagged_terms:
 
 
 ############################################
+
+we should create features for prominince etc. on all these other
+platforms and then this can be used along with previous trends
+which did become popular to try to identify what are the features
+that lead to tipping point.
+
 could we train a model to predict the popularity of a post on reddit
 then build our own titles based on twitter data?
 NO - the whole point is that this is a changing time series and

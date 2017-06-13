@@ -143,19 +143,6 @@ def generate_tweets_file():
     return
 
 
-def analyse_tweets():
-    tweets = load_file('during_processing.pkl')
-    plot_historical(history_generator(tweets))
-    # create old and new doc
-    doc = " ".join([t['text'] for t in tweets])
-    # need to filter out bad tweets
-    # ones containing careers, jobs, hiring
-    stop_words = ['career', 'job', 'hire', 'hiring','https','t.co', 'teach', 'educ',
-                  'Job','Hiring','Career', 'latest opening','recommend anyone','RT']
-    for word in stop_words:
-        doc = doc.replace(word, "")
-
-
 generate_tweets_file()
 
 
