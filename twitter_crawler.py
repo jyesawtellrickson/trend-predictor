@@ -12,7 +12,6 @@ auth.set_access_token(access_token, access_secret)
  
 api = tweepy.API(auth)
 
-HISTORICAL_TWEETS = []
 
 # get tweets on the education hashtag
 # count the number of times each user has tweeted on that hashtag
@@ -124,17 +123,17 @@ def history_generator(tweets):
     return counts_all
 
 
-def get_user_tweets(HISTORICAL_TWEETS):
+def get_user_tweets(tweets, user_count=20):
     # get a count of user strings
-    users = dict(Counter([t['user']['id_str'] for t in HISTORICAL_TWEETS]))
-    top_10 = sorted(users, key=users.get, reverse=True)[:20]
+    users = dict(Counter([t['user']['id_str'] for t in tweets]))
+    top_users = sorted(users, key=users.get, reverse=True)[:user_count]
 
-    for user_id_str in top_10:
+    for user_id_str in top_users:
         print('getting tweets for user '+user_id_str)
         new_tweets = tweets_for_user(api, user_id_str)
-        HISTORICAL_TWEETS += new_tweets
+        tweets += new_tweets
 
-    return HISTORICAL_TWEETS
+    return tweets
 
 
 def generate_tweets_file():
@@ -149,18 +148,14 @@ def analyse_tweets():
     plot_historical(history_generator(tweets))
     # create old and new doc
     doc = " ".join([t['text'] for t in tweets])
-    doc = stem_doc(doc)
     # need to filter out bad tweets
     # ones containing careers, jobs, hiring
     stop_words = ['career', 'job', 'hire', 'hiring','https','t.co', 'teach', 'educ',
                   'Job','Hiring','Career', 'latest opening','recommend anyone','RT']
     for word in stop_words:
         doc = doc.replace(word, "")
-    generate_wordcloud(doc)
 
 
-# generate_tweets_file()
-analyse_tweets()
-# done
+generate_tweets_file()
 
 

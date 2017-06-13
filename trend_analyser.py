@@ -1,7 +1,3 @@
-import tweepy
-from tweepy import OAuthHandler
-
-from collections import Counter
 from datetime import datetime
 
 from wordcloud import WordCloud
@@ -13,78 +9,10 @@ from sklearn.feature_extraction.text import CountVectorizer
 import numpy as np
 import operator
 
-import json
-import pickle
+from util import *
 
-from credentials import *
 
-auth = OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_secret)
- 
-api = tweepy.API(auth)
-
-HISTORICAL_TWEETS = []
-
-# get tweets on the education hashtag
-# count the number of times each user has tweeted on that hashtag
-# get the tweets of the most common user, update score table with rt's and tags
-# potentially also get following / friends from our top users to grow our education
-# influencers
-# continue getting tweets
 # should preprocess the text lemmatize/stem
-
-"""
-functions required:
-    - get tweets for hashtag
-    - count users, hashtags and tags
-    - find most common user
-"""
-
-def tweets_for_user(api, username):
-    number = 100
-    # check username is string
-    tweets = []
-    user = api.get_user(username)
-    for status in tweepy.Cursor(api.user_timeline, id=user.id).items(number):
-        tweets += [status._json]
-    # check the user is legit before returning
-    # are they really a thought leader? or jobs
-    # check bio as well, does it have our keywords?
-    test_edu = 0
-    test = 0
-    for tweet in tweets:
-        test += tweet['text'].find('job') >= 0
-        test_edu += tweet['text'].find('educat') >= 0
-    test = test / len(tweets)
-    # do they talk about education enough?
-    # are they posting too often?
-    if test > 0.5 or test_edu < 0.1:
-        return
-    return tweets
-
-def limit_handled(cursor):
-    while True:
-        try:
-            yield cursor.next()
-        except: # tweepy.RateLimitError:
-            print("hit rate limit")
-            break
-
-
-# need to add the use of since_id
-def tweets_for_search(api, search, number):
-    if not number:
-        number = 150
-    tweets = []
-    # return results up to number
-    for status in limit_handled(tweepy.Cursor(api.search, q=search).items()):
-        tweets += [status._json]
-        # print updates to screen
-        if len(tweets) % 100 == 0:
-            print("{0} tweets processed".format(len(tweets)))
-            save_file(tweets, "during_processing.pkl")
-    return tweets
-
 
 def stem_doc(doc):
     stemmer = PorterStemmer()
@@ -104,14 +32,6 @@ def update_tweeter_scores(tweets, scores):
         scores[tweet['user']['id_str']] += 1
         # one score for each mention
     return scores
-
-
-def tweets_to_text_date(tweets):
-    return [(t['created_at'], t['text']) for t in tweets]
-
-
-def remove_links(tweet_text):
-    return tweet_text
 
 
 def generate_wordcloud(doc):
@@ -186,40 +106,6 @@ def create_counts(doc):
     return fdist
 
 
-def get_user_tweets(HISTORICAL_TWEETS):
-    # get a count of user strings
-    users = dict(Counter([t['user']['id_str'] for t in HISTORICAL_TWEETS]))
-    top_10 = sorted(users, key=users.get, reverse=True)[:20]
-
-    for user_id_str in top_10:
-        print('getting tweets for user '+user_id_str)
-        new_tweets = tweets_for_user(api, user_id_str)
-        HISTORICAL_TWEETS += new_tweets
-
-    return HISTORICAL_TWEETS
-
-
-def save_file(file, output_name):
-    output_file = open(output_name, 'wb')
-    pickle.dump(file, output_file)
-    output_file.close()
-    return
-
-
-def load_file(file_name):
-    file = open(file_name, 'rb')
-    data = pickle.load(file)
-    file.close()
-    return data
-
-
-def generate_tweets_file():
-    print("getting tweets for search term")
-    tweets = tweets_for_search(api, "#education #teaching", None)
-    save_file(tweets, 'historical_tweets_2.pkl')
-    return
-
-
 def analyse_tweets():
     tweets = load_file('during_processing.pkl')
     plot_historical(history_generator(tweets))
@@ -235,7 +121,6 @@ def analyse_tweets():
     generate_wordcloud(doc)
 
 
-# generate_tweets_file()
 analyse_tweets()
 # done
 

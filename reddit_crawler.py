@@ -1,7 +1,6 @@
 """
     Script to scrape reddit for thread titles.
-    Data is pickled in a pandas dataframe as well as
-    being saved as a csv.
+    Data is pickled.
 """
 
 import bs4
