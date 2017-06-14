@@ -9,6 +9,7 @@
 
 
 import praw
+
 from util import *
 from credentials import *
 
@@ -32,6 +33,26 @@ def year_to_epoch(year):
     return datetime.strptime(year, '%Y').timestamp()
 
 
+def get_all_comments(submission, limit=0):
+    """
+    Return all comments for a submission.
+    Args:
+        submission: instance of reddit submission
+        limit: int max number of requests to use
+
+    Returns: list of reddit docs
+
+    """
+    if not isinstance(submission, praw.models.Submission):
+        print("Must provide submission instance")
+        raise TypeError
+    submission.comments.replace_more(limit=limit)
+    comments = []
+    for comment in submission.comments.list():
+        comments += [(comment.id, comment.created, comment.body, None, comment.ups, comment.downs)]
+    return comments
+
+
 # define subreddits to scrape
 subreddits = ['teaching', 'education']
 timeframes = ['2012', '2016']
@@ -49,16 +70,20 @@ for subreddit in subreddits:
         # process submission
         submissions += [(submission.id, submission.created, submission.title, submission.num_comments,
                          submission.ups, submission.downs)]
+        try:
+            submissions += get_all_comments(submission)
+        except:
+            print("comments error")
         print(datetime.fromtimestamp(submission.created).strftime('%Y %m %d'))
     # dump completed output to caterers pickle file
-    save_file(submissions, 'reddit_2_'+subreddit+'_submissions.pkl')
+    save_file(submissions, 'reddit_3_'+subreddit+'_submissions.pkl')
     print(subreddit+" complete.")
 # send final output to user
 print("All subreddits completed.")
 
 
-def prepare_reddit_corpus():
-    submissions = load_file('reddit_2_education_submissions.pkl')
+def prepare_reddit_corpus(file_name):
+    submissions = load_file(file_name)
     # put in same format as others
     docs = [(s[1], s[2], round(math.log(s[3]+1))+1) for s in submissions]
     save_file(docs, 'reddit_for_analysis.pkl')

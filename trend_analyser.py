@@ -9,6 +9,7 @@ import numpy as np
 
 import pandas as pd
 
+from math import floor, ceil
 
 from nltk.stem.porter import *
 
@@ -103,7 +104,8 @@ def snippets_to_doc(snippets):
 
     """
     # multiply each by the weight
-    return "".join([(s[1]+' ')*int(s[2]) for s in snippets])
+    # *int(s[2])
+    return " ".join([s[1] for s in snippets])
 
 
 def divide_monthly(docs):
@@ -154,10 +156,30 @@ def create_counts(doc, count=200):
     Returns: dict containing counts of terms
 
     """
-    freqs = Counter(doc.lower().split()).most_common(count)
+    """
+    # if doc is very big, this breaks, split first
+    if len(doc) > 5000:
+        chunks = 10
+    else:
+        chunks = 1
+    freqs = Counter()
+    doc_length = 0
+    for i in range(0, chunks):
+        crb = floor(i*len(doc)/chunks)
+        crt = floor((i+1)*len(doc)/chunks) - 1
+        doc_chunk = doc[crb:crt].lower().split()
+        doc_length += len(doc_chunk)
+        tmp = Counter(doc_chunk)
+        freqs.update(tmp)
+    freqs = freqs.most_common(count)
+    """
+    print(len(doc))
+    doc = doc[0:5000000]
+    doc = doc.lower().split()
+    freqs = dict(Counter(doc).most_common(count))
     # normalise
-    for i in range(0, len(freqs)):
-        freqs[i] = (freqs[i][0], freqs[i][1] / len(doc.split()))
+    for word in freqs.keys():
+        freqs[word] = freqs[word] / len(doc)
     return freqs
 
 
@@ -166,14 +188,16 @@ def analyse_snippets():
     # divide monthly
     monthly_snippets = divide_monthly(snippets)
     df = pd.DataFrame()
+    count = 0
     # convert to docs and stem
     for key in monthly_snippets.keys():
         monthly_snippets[key] = stem_doc(remove_stop_words(snippets_to_doc(monthly_snippets[key])))
         counts = create_counts(monthly_snippets[key])
-        df_temp = pd.DataFrame([(key, c[0], c[1]) for c in counts])
+        df_temp = pd.DataFrame([(key, c[0], c[1]) for c in list(counts.items())])
         df_temp = df_temp.pivot(index=1, columns=0, values=2)
         df = pd.concat([df, df_temp], axis=1)
-        print(key, df)
+        print(count, key, len(df))
+        count+=1
         # generate_wordcloud(monthly_snippets[key])
     df = df.transpose()
     df.sort_index(inplace=True)
@@ -234,7 +258,7 @@ def stats_tests():
     return
 
 
-# analyse_snippets()
+analyse_snippets()
 stats_tests()
 
 # done
