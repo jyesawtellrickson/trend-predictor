@@ -237,6 +237,7 @@ def stats_tests():
     df = load_file('dataframe_for_plot.pkl')
     df = df.transpose()
     adf_results = []
+    up = []
     # df = df.dropna()
     # df = df.drop([datetime(year=2012,month=2,day=1).date().strftime('%Y-%m-%d %H:%M:%S')], axis=1)
     df.fillna(0, inplace=True)
@@ -249,16 +250,18 @@ def stats_tests():
         # add smoothed data
         df.iloc[i] = np.array(data)
         adf_results += [ts.adfuller(data[2:-2])[1]]
+        up += [(sum(data) - 2 * sum(data[0:int(len(data)/2)]))/sum(data)]
     # append results to df
+    df['up'] = up
     df['max'] = df.apply(max, axis=1)
     df['adf_results'] = adf_results
-    adf_cutoff = sorted(adf_results)[10]
+    adf_cutoff = sorted(adf_results)[20]
     print(df)
-    plot_df(df.loc[(df['adf_results'] < adf_cutoff)].transpose()) # & (df['max'] < 0.0015)].transpose())
+    plot_df(df.loc[(df['up'] > 0.1)].transpose()) # & (df['max'] < 0.0015)].transpose())
     return
 
 
-analyse_snippets()
+# analyse_snippets()
 stats_tests()
 
 # done
