@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 from nltk.corpus import stopwords
 
 import statsmodels.tsa.stattools as ts
+from statsmodels.nonparametric.smoothers_lowess import lowess
+from math import factorial
+import numpy as np
 
 import pandas as pd
+
 
 from nltk.stem.porter import *
 
@@ -125,30 +129,39 @@ def divide_monthly(docs):
 
 
 def remove_stop_words(doc):
+    """
+    Remove stopwords from a doc
+    Args:
+        doc: string
+
+    Returns: string
+
+    """
     cached_stop_words = set(stopwords.words("english"))
     cached_stop_words.update(['education','&','-','--','2012','8','america','american'])
     doc = ' '.join([word for word in doc.split() if word.lower() not in cached_stop_words])
     return doc
 
 
-def create_counts(doc):
+def create_counts(doc, count=200):
     """
     Create a frequency distribution from a doc.
 
     Args:
         doc: string
+        count: int number of terms to return
 
-    Returns: dict containing counts of top 100 terms
+    Returns: dict containing counts of terms
 
     """
-    freqs = Counter(doc.lower().split()).most_common(100)
+    freqs = Counter(doc.lower().split()).most_common(count)
     # normalise
     for i in range(0, len(freqs)):
         freqs[i] = (freqs[i][0], freqs[i][1] / len(doc.split()))
     return freqs
 
 
-def analyse_tweets():
+def analyse_snippets():
     snippets = load_file('reddit_for_analysis.pkl')
     # divide monthly
     monthly_snippets = divide_monthly(snippets)
@@ -167,13 +180,62 @@ def analyse_tweets():
     print(df)
     save_file(df, 'dataframe_for_plot.pkl')
 
+def plot_df(df):
+    df.plot()
+    plt.show()
+    return
+
+
+def savitzky_golay(y, window_size, order, deriv=0, rate=1):
+    try:
+        window_size = np.abs(np.int(window_size))
+        order = np.abs(np.int(order))
+    except ValueError:
+        raise ValueError("window_size and order have to be of type int")
+    if window_size % 2 != 1 or window_size < 1:
+        raise TypeError("window_size size must be a positive odd number")
+    if window_size < order + 2:
+        raise TypeError("window_size is too small for the polynomials order")
+    order_range = range(order+1)
+    half_window = (window_size -1) // 2
+    # precompute coefficients
+    b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
+    m = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
+    # pad the signal at the extremes with
+    # values taken from the signal itself
+    firstvals = y[0] - np.abs( y[1:half_window+1][::-1] - y[0] )
+    lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
+    y = np.concatenate((firstvals, y, lastvals))
+    return np.convolve( m[::-1], y, mode='valid')
+
 
 def stats_tests():
+    df = load_file('dataframe_for_plot.pkl')
+    df = df.transpose()
+    adf_results = []
+    # df = df.dropna()
+    # df = df.drop([datetime(year=2012,month=2,day=1).date().strftime('%Y-%m-%d %H:%M:%S')], axis=1)
+    df.fillna(0, inplace=True)
+    # for each row, perform adf test
+    # row is a word
+    for i in range(0, len(df)):
+        data = list(df.iloc[i])
+        # smooth data
+        data = list(savitzky_golay(np.array(data), 7, 1))
+        # add smoothed data
+        df.iloc[i] = np.array(data)
+        adf_results += [ts.adfuller(data[2:-2])[1]]
+    # append results to df
+    df['max'] = df.apply(max, axis=1)
+    df['adf_results'] = adf_results
+    adf_cutoff = sorted(adf_results)[10]
+    print(df)
+    plot_df(df.loc[(df['adf_results'] < adf_cutoff)].transpose()) # & (df['max'] < 0.0015)].transpose())
+    return
 
 
-
-analyse_tweets()
-
+# analyse_snippets()
+stats_tests()
 
 # done
 

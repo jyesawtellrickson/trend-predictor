@@ -3,6 +3,11 @@
     Data is pickled.
 """
 
+
+# need to get comment info as the initial post date might not
+# reflect how long the discussion continued
+
+
 import praw
 from util import *
 from credentials import *
@@ -29,13 +34,13 @@ def year_to_epoch(year):
 
 # define subreddits to scrape
 subreddits = ['teaching', 'education']
-posts = []
 timeframes = ['2012', '2016']
 
+# initialise reddit instance
 reddit = praw.Reddit(user_agent='Submission extraction', client_id=reddit_client_id,
                      client_secret=reddit_secret)
 
-# process each country seperately
+# process each subreddit seperately
 for subreddit in subreddits:
     submissions = []
     for submission in reddit.subreddit(subreddit).submissions(start=year_to_epoch(timeframes[0]),
