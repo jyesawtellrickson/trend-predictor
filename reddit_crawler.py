@@ -2,26 +2,19 @@
     Script to scrape reddit for thread titles.
     Data is pickled.
 """
-
-
-# need to get comment info as the initial post date might not
-# reflect how long the discussion continued
-
-
 import praw
 
 from util import *
-from credentials import *
 
-import math
+from math import log
 from datetime import datetime
 
-# can we use the number of comments / upvotes as a measure of impact ??
 
-class RedditCrawler():
+class RedditCrawler:
 
     def __init__(self, subreddits, dates, reddit_file='reddit_file.pkl', snippet_file='reddit_snippet_file.pkl'):
         # initialise basic props
+        self.reddit = None
         self.subreddits = subreddits
         self.dates = dates
         self.reddit_file = reddit_file
@@ -49,13 +42,11 @@ class RedditCrawler():
     def get_comments(self):
         """
         For the defined subreddits and dates, downloads
-        all top-level comments and saves to specified file.
-        Args:
-            output: filename str
-
-        Returns:
-
+        all top-level comments and saves to pickle file.
         """
+        if not self.reddit:
+            print("Authenticate first")
+            return
         if not self.subreddits:
             print("Must set subreddits first")
             return
@@ -66,7 +57,7 @@ class RedditCrawler():
                     end=self.year_to_epoch(self.dates[1])):
                 # process submission
                 submissions += [(submission.id, submission.created, submission.title, submission.num_comments,
-                         submission.ups, submission.downs)]
+                                 submission.ups, submission.downs)]
                 try:
                     submissions += self.get_all_comments(submission)
                 except:
@@ -82,13 +73,11 @@ class RedditCrawler():
     def get_submissions(self):
         """
         For the defined subreddits and dates, downloads
-        all submissions and saves to specified file.
-        Args:
-            output: filename str
-
-        Returns:
-
+        all submissions and saves to pickle file.
         """
+        if not self.reddit:
+            print("Authenticate first")
+            return
         if not self.subreddits:
             print("Must set subreddits first")
             return
@@ -111,16 +100,10 @@ class RedditCrawler():
     def prepare_snippets(self):
         """
         Converts reddit docs to Snippet form for
-        processing in main script.
-        Args:
-            file_name: str
-            output: str
-
-        Returns:
-
+        processing in main script. File saved to pickle.
         """
         submissions = load_file(self.reddit_file)
-        snippets = [(s[1], s[2], round(math.log(s[3]+1))+1) for s in submissions]
+        snippets = [(s[1], s[2], round(log(s[3]+1))+1) for s in submissions]
         save_file(snippets, self.snippet_file)
         print("Final file saved to ", self.snippet_file)
         return
@@ -149,13 +132,5 @@ class RedditCrawler():
             comments += [(comment.id, comment.created, comment.body, None, comment.ups, comment.downs)]
         return comments
 
-
-reddit_crawler = RedditCrawler(['education'], ['2015', '2016'])
-
-reddit_crawler.authenticate(reddit_client_id, reddit_secret)
-
-reddit_crawler.get_submissions()
-
-reddit_crawler.prepare_snippets()
 
 

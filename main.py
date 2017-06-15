@@ -32,17 +32,11 @@ plot graphs for these terms and further inspect behaviour
 for term in flagged_terms:
     check student posts on twitter
 
-
-
-############################################
-
-we should create features for prominince etc. on all these other
-platforms and then this can be used along with previous trends
-which did become popular to try to identify what are the features
-that lead to tipping point.
-
-could we train a model to predict the popularity of a post on reddit
-then build our own titles based on twitter data?
-NO - the whole point is that this is a changing time series and
-the linguistic models can't do this sort of forward thinking.
 """
+
+# collect reddit data
+reddit_crawler = RedditCrawler(['education'], ['2015', '2016'])
+reddit_crawler.authenticate(reddit_client_id, reddit_secret)
+reddit_crawler.get_submissions()
+reddit_crawler.prepare_snippets()
+
