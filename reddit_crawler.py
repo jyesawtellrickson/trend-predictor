@@ -103,7 +103,7 @@ class RedditCrawler:
         processing in main script. File saved to pickle.
         """
         submissions = load_file(self.reddit_file)
-        snippets = [(s[1], s[2], round(log(s[3]+1))+1) for s in submissions]
+        snippets = [(s[1], s[2], 1) for s in submissions]  # round(log(s[4]+1))+1)
         save_file(snippets, self.snippet_file)
         print("Final file saved to ", self.snippet_file)
         return

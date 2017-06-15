@@ -1,3 +1,6 @@
+"""
+Collection of functions used by main scripts.
+"""
 import pickle as pkl
 
 def save_file(file, output_name):
