@@ -57,6 +57,7 @@ class TrendAnalyser:
         df = pd.DataFrame()
         count = 0
         # convert to docs and stem
+        print("Generating time series")
         for key in monthly_snippets.keys():
             # monthly_snippets[key] = stem_doc(remove_stop_words(snippets_to_doc(monthly_snippets[key])))
             # counts = create_counts(monthly_snippets[key])
@@ -65,12 +66,34 @@ class TrendAnalyser:
             df_temp = pd.DataFrame.from_dict(counts, orient='index')
             df_temp.columns = [key]
             df = pd.concat([df, df_temp], axis=1)
-            print(count, key, len(df))
+            # print(count, key, len(df))
             count += 1
         df = df.transpose()
         df.sort_index(inplace=True)
         save_file(df, self.time_series_file)
         print('Time series successfully created')
+        return
+
+
+    @staticmethod
+    def plot_time_series(df):
+        """
+        Create a line plot of the time series DataFrame
+        Args:
+            df (DataFrame):
+        """
+        # Remove excess data
+        df = df[:-4]
+        # Normalise
+        max_val = max(df.apply(np.max))
+        df = df.apply(lambda x:  x/max_val)
+        time_series_plot = df.plot(kind='line',
+                                   figsize=(20, 15),
+                                   fontsize=15)
+        plt.xlabel('Month', fontsize=20)
+        plt.ylabel('Popularity', fontsize=20)
+        plt.title('Historical Word Popularity', fontsize=25)
+        plt.show()
         return
 
     @staticmethod
@@ -80,7 +103,7 @@ class TrendAnalyser:
         Args:
             df (DataFrame):
         """
-        df.plot()  # ylim=(0.0015, 0.005))
+        df.plot()
         plt.show()
         return
 
@@ -96,8 +119,10 @@ class TrendAnalyser:
         df.fillna(0, inplace=True)
         # for each row, perform adf test
         # row is a word
+        print("Running statistics tests")
         for i in range(0, len(df)):
-            print(i)
+            if i % 20 == 0:
+                print("  {:.1%} complete".format(i/len(df)))
             data = list(df.iloc[i])
             # smooth data
             data = list(savgol_filter(np.array(data), 7, 2))
@@ -114,8 +139,9 @@ class TrendAnalyser:
         df['max'] = maxim  # df.apply(max, axis=1)
         df['adf_results'] = adf_results
         adf_cutoff = sorted(adf_results)[20]
-        print(df)
-        self.plot_df(df.loc[(df['up'] > 0.1) & (df['average'] > 0.001) & (df['adf_results'] > 0.1)].transpose())  # & (df['max'] < 0.0015)].transpose())
+        print("Statistics tests complete")
+        self.plot_time_series(df.loc[(df['up'] > 0.1) & (df['average'] > 0.001)].transpose())  # & (df['max'] < 0.0015)].transpose())
+        # self.plot_time_series(df.loc[(df['up'] > 0) & (df['average'] > 0.001)plot_df & (df['adf_results'] < 0.1)].transpose())  # & (df['max'] < 0.0015)].transpose())
         return
 
     # Data clean-up
@@ -259,7 +285,7 @@ class TrendAnalyser:
         return freqs
 
 
-trendy = TrendAnalyser()
-trendy.load_source('reddit')
-trendy.create_time_series()
-trendy.stats_tests()
+# trendy = TrendAnalyser()
+# trendy.load_source('reddit')
+# trendy.create_time_series()
+# trendy.stats_tests()

@@ -3,12 +3,9 @@
     Data is pickled.
 """
 import praw
-
 from util import *
-
 from math import log
 from datetime import datetime
-
 
 class RedditCrawler:
 

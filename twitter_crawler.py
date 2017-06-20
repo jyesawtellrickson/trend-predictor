@@ -7,26 +7,10 @@ from datetime import datetime
 from util import *
 
 
-# get tweets on the education hashtag
-# count the number of times each user has tweeted on that hashtag
-# get the tweets of the most common user, update score table with rt's and tags
-# potentially also get following / friends from our top users to grow our education
-# influencers
-# continue getting tweets
-# should preprocess the text lemmatize/stem
-
-"""
-functions required:
-    - get tweets for hashtag
-    - count users, hashtags and tags
-    - find most common user
-"""
-
-
 class TwitterCrawler:
 
     def __init__(self, queries, dates, twitter_file='twitter_file.pkl', snippet_file='twitter_snippet_file.pkl'):
-        # initialise basic props
+        # initialise basic params
         self.twitter = None
         self.queries = queries
         self.dates = dates
@@ -132,15 +116,14 @@ class TwitterCrawler:
             # one score for each mention
         return scores
 
-    @staticmethod
-    def expand_top_tweeters(tweets, user_count=20):
+    def expand_top_tweeters(self, tweets, user_count=20):
         # get a count of user strings
         users = dict(Counter([t['user']['id_str'] for t in tweets]))
         top_users = sorted(users, key=users.get, reverse=True)[:user_count]
 
         for user_id_str in top_users:
-            print('getting tweets for user '+user_id_str)
-            new_tweets = tweets_for_user(api, user_id_str)
+            print('Getting tweets for user '+user_id_str)
+            new_tweets = self.tweets_for_user(user_id_str)
             tweets += new_tweets
         return tweets
 
