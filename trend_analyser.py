@@ -259,8 +259,11 @@ class TrendAnalyser:
 
         """
         # limit size of doc or else it breaks on MemoryError
-        doc = doc[0:7000000]
-        doc = doc.lower().split()
+        try:
+            doc = doc.lower().split()
+        except MemoryError:
+            doc = doc[0:7000000]
+            doc = doc.lower().split()
         freqs = dict(Counter(doc).most_common(count))
         # normalise
         for word in freqs.keys():
@@ -283,9 +286,3 @@ class TrendAnalyser:
         for word in freqs.keys():
             freqs[word] /= len(doc)
         return freqs
-
-
-# trendy = TrendAnalyser()
-# trendy.load_source('reddit')
-# trendy.create_time_series()
-# trendy.stats_tests()

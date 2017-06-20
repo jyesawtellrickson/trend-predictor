@@ -7,6 +7,7 @@ from util import *
 from math import log
 from datetime import datetime
 
+
 class RedditCrawler:
 
     def __init__(self, subreddits, dates, reddit_file='reddit_file.pkl', snippet_file='reddit_snippet_file.pkl'):
