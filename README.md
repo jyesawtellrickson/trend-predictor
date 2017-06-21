@@ -39,9 +39,6 @@ The overall structure of the model is:
 
 ## Data Sources
 
-
-## Data Sources
-
 Data comes from:
 - twitter (via tweepy)
 - reddit (via PRAW)
